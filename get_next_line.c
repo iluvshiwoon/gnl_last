@@ -193,7 +193,7 @@ t_return read_line(char **buffer, t_fd_list *node) {
 
   if (nl_addr != NULL) {
     if (copy_to_stash(*buffer, node, nl_addr, len) == ERROR)
-      return ERROR;
+      return (free(*buffer), ERROR);
     final_len = nl_addr - *buffer + 1;
   } else {
     final_len = len;
