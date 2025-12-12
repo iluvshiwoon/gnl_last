@@ -44,33 +44,78 @@ char *get_nl_addr(char *start, size_t n) {
   return NULL;
 }
 
+// t_return check_stash(char **r_value, t_fd_list *node) {
+//   char *nl_addr;
+//   char *remainder;
+//   size_t remainder_len;
+//
+//   if (node->stash_len == 0)
+//     return SUCCESS;
+//   nl_addr = get_nl_addr(node->stash, node->stash_len);
+//   if (nl_addr == NULL)
+//     return SUCCESS;
+//   remainder_len = node->stash_len - (nl_addr - node->stash + 1);
+//   remainder = NULL;
+//   if (remainder_len > 0) {
+//     remainder = malloc(
+//         sizeof(char) *
+//         (remainder_len + 1)); // +1 so if it fits exactly a line + \n we can
+//     if (remainder == NULL)
+//       return ERROR;
+//     ft_memcpy(remainder, nl_addr + 1, remainder_len);
+//   }
+//   *r_value = node->stash;
+//   (*r_value)[nl_addr - *r_value + 1] = '\0';
+//   node->stash = remainder;
+//   node->stash_len = remainder_len;
+//   return SUCCESS;
+// }
+//
 t_return check_stash(char **r_value, t_fd_list *node) {
   char *nl_addr;
+  char *line; // New variable for the exact-fit line
   char *remainder;
   size_t remainder_len;
+  size_t line_len; // New variable to track line size
 
   if (node->stash_len == 0)
     return SUCCESS;
   nl_addr = get_nl_addr(node->stash, node->stash_len);
   if (nl_addr == NULL)
     return SUCCESS;
-  remainder_len = node->stash_len - (nl_addr - node->stash + 1);
+
+  // 1. Calculate precise lengths
+  line_len = nl_addr - node->stash + 1;
+  remainder_len = node->stash_len - line_len;
+
+  // 2. Allocate the line (EXACT FIT)
+  line = malloc(sizeof(char) * (line_len + 1));
+  if (line == NULL)
+    return ERROR;
+  ft_memcpy(line, node->stash, line_len);
+  line[line_len] = '\0';
+
+  // 3. Handle the remainder
   remainder = NULL;
   if (remainder_len > 0) {
-    remainder = malloc(
-        sizeof(char) *
-        (remainder_len + 1)); // +1 so if it fits exactly a line + \n we can
-    if (remainder == NULL)
+    remainder = malloc(sizeof(char) * (remainder_len + 1));
+    if (remainder == NULL) {
+      free(line); // <--- IMPORTANT: Clean up if second malloc fails
       return ERROR;
+    }
     ft_memcpy(remainder, nl_addr + 1, remainder_len);
+    // No null terminator needed for stash as per your logic,
+    // but safe to add if you want: remainder[remainder_len] = '\0';
   }
-  *r_value = node->stash;
-  (*r_value)[nl_addr - *r_value + 1] = '\0';
+
+  // 4. Swap and Free
+  free(node->stash); // Destroy the oversized old stash
   node->stash = remainder;
   node->stash_len = remainder_len;
+  *r_value = line; // Return the perfectly sized line
+
   return SUCCESS;
 }
-
 t_return ensure_capacity(char **buffer, size_t *capacity, size_t used_len,
                          size_t needed_size) {
   char *new_buffer;
@@ -202,7 +247,7 @@ char *get_next_line(int fd) {
   if (r_value != NULL) // found line in stash;
     return r_value;
   status = read_line(&r_value, node);
-  if (status == ERROR || status == EOF)
+  if (status == ERROR || (int)status == EOF)
     return (free_gnl(&head, fd), NULL);
   return r_value;
 }
