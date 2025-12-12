@@ -1,8 +1,12 @@
 #ifndef GET_NEXT_LINE_H
 #define GET_NEXT_LINE_H
+#ifndef BUFFER_SIZE
 #define BUFFER_SIZE 10 // Change to 4096
+#endif
 #include <stdlib.h>
 #include <unistd.h>
+
+typedef enum e_return { SUCCESS, ERROR } t_return;
 
 typedef struct s_fd_list {
   int fd;
