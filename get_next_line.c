@@ -136,12 +136,37 @@ t_return read_line(char **buffer, t_fd_list *node) {
     if (nl_addr != NULL)
       break;
   }
+  // if (nl_addr != NULL) {
+  //   if (copy_to_stash(*buffer, node, nl_addr, len) == ERROR)
+  //     return ERROR;
+  //   (*buffer)[nl_addr - *buffer + 1] = '\0';
+  // } else
+  //   (*buffer)[len] = '\0';
+  // return SUCCESS;
+  size_t final_len;
+  char *exact_line;
+
   if (nl_addr != NULL) {
     if (copy_to_stash(*buffer, node, nl_addr, len) == ERROR)
       return ERROR;
-    (*buffer)[nl_addr - *buffer + 1] = '\0';
-  } else
-    (*buffer)[len] = '\0';
+    final_len = nl_addr - *buffer + 1;
+  } else {
+    final_len = len;
+  }
+
+  // Allocate EXACT size
+  exact_line = malloc(sizeof(char) * (final_len + 1));
+  if (exact_line == NULL)
+    return (free(*buffer), ERROR);
+
+  // Copy and Null-terminate
+  ft_memcpy(exact_line, *buffer, final_len);
+  exact_line[final_len] = '\0';
+
+  // Free the big buffer and replace it
+  free(*buffer);
+  *buffer = exact_line;
+
   return SUCCESS;
 }
 
